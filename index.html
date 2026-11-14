@@ -63,8 +63,8 @@ const SKY=0xa9c8ea;
 scene.background=new THREE.Color(SKY);
 scene.fog=new THREE.Fog(SKY,45,120);
 const camera=new THREE.PerspectiveCamera(40,1,0.1,300);
-scene.add(new THREE.AmbientLight(0xffffff,0.75));
-const sun=new THREE.DirectionalLight(0xffffff,0.6);sun.position.set(10,20,12);scene.add(sun);
+scene.add(new THREE.AmbientLight(0xffffff,0.8));
+const sun=new THREE.DirectionalLight(0xffffff,0.55);sun.position.set(10,20,12);scene.add(sun);
 
 // ---- deewar (photos) ----
 const loader=new THREE.TextureLoader();
@@ -81,49 +81,160 @@ ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
 const pad=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0xb4b0a6}));
 pad.rotation.x=-Math.PI/2;pad.position.y=0;scene.add(pad);
 
-// ---- chhat (roof terrace) ----
+// ---- chhat (roof terrace) : photo jaisi ----
 const roofG=new THREE.Group();scene.add(roofG);
 const L=c=>new THREE.MeshLambertMaterial({color:c});
 const B=c=>new THREE.MeshBasicMaterial({color:c});
+function ctex(draw,cw,ch){const c=document.createElement('canvas');c.width=cw;c.height=ch;draw(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t}
+const stoneTex=ctex(g=>{
+ g.fillStyle='#7d776c';g.fillRect(0,0,256,256);
+ for(let y=0;y<256;y+=32){let x=-((y/32)%2)*22;while(x<256){const ww=30+Math.random()*28;const v=(150+Math.random()*36)|0;g.fillStyle='rgb('+v+','+(v-6)+','+(v-16)+')';g.fillRect(x+1.5,y+1.5,ww-3,29);x+=ww}}
+},256,256);
+const woodTex=ctex(g=>{
+ g.fillStyle='#9a6030';g.fillRect(0,0,128,128);
+ for(let y=0;y<128;y+=16){g.fillStyle='rgba(60,30,10,.55)';g.fillRect(0,y,128,2);for(let i=0;i<6;i++){g.fillStyle='rgba(255,200,140,.12)';g.fillRect(Math.random()*128,y+3+Math.random()*10,20+Math.random()*40,1)}}
+},128,128);
+woodTex.repeat.set(3,2);
+
+let seed=7;
+const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
 function box(sx,sy,sz,x,y,z,m){const b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);b.position.set(x,y,z);roofG.add(b);return b}
-function plant(x,y,z,s,c){
- const g=new THREE.Mesh(new THREE.ConeGeometry(0.22*s,0.7*s,8),L(c));g.position.set(x,y+0.35*s,z);roofG.add(g);
+function ball(r,x,y,z,c,sy){const s=new THREE.Mesh(new THREE.SphereGeometry(r,7,5),L(c));s.position.set(x,y,z);if(sy)s.scale.y=sy;roofG.add(s);return s}
+// agave / succulent rosette
+function succ(x,y,z,s,c){
+ const n=9;
+ for(let i=0;i<n;i++){
+  const a=i/n*Math.PI*2,th=0.95;
+  const cn=new THREE.Mesh(new THREE.ConeGeometry(0.11*s,0.5*s,5),L(c));
+  cn.position.set(x+Math.cos(a)*0.17*s,y+0.2*s,z+Math.sin(a)*0.17*s);
+  cn.rotation.set(Math.sin(a)*th,0,-Math.cos(a)*th);roofG.add(cn);
+ }
+ const cn=new THREE.Mesh(new THREE.ConeGeometry(0.1*s,0.45*s,5),L(c));cn.position.set(x,y+0.24*s,z);roofG.add(cn);
 }
+// palm / cycad
+function palm(x,y,z,s){
+ const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.07*s,0.1*s,0.55*s,6),L(0x6b4a2a));tr.position.set(x,y+0.27*s,z);roofG.add(tr);
+ for(let i=0;i<10;i++){
+  const a=i/10*Math.PI*2,th=1.15;
+  const f=new THREE.Mesh(new THREE.ConeGeometry(0.09*s,1.0*s,4),L(i%2?0x2f7d3a:0x3f9445));
+  f.position.set(x+Math.cos(a)*0.34*s,y+0.62*s,z+Math.sin(a)*0.34*s);
+  f.rotation.set(Math.sin(a)*th,0,-Math.cos(a)*th);roofG.add(f);
+ }
+}
+function grass(x,y,z,s,c){for(let i=0;i<6;i++){const a=i/6*6.28;const g=new THREE.Mesh(new THREE.ConeGeometry(0.04*s,0.55*s,3),L(c));g.position.set(x+Math.cos(a)*0.1*s,y+0.25*s,z+Math.sin(a)*0.1*s);g.rotation.set(Math.sin(a)*0.35,0,-Math.cos(a)*0.35);roofG.add(g)}}
+function vine(x,z,y0,y1){
+ for(let i=0;i<10;i++){
+  const t=i/9;
+  ball(0.15+rnd()*0.14,x+(rnd()-.5)*0.35,y0+(y1-y0)*t,z+(rnd()-.5)*0.35,i%3?0x3d8c3a:0x2c7632);
+  if(i%2)ball(0.06,x+(rnd()-.5)*0.5,y0+(y1-y0)*t,z+(rnd()-.5)*0.5,0xc2569f);
+ }
+}
+function vineH(x0,x1,z,y){
+ const n=Math.max(6,Math.round((x1-x0)/0.35));
+ for(let i=0;i<=n;i++){
+  const x=x0+(x1-x0)*i/n;
+  ball(0.17+rnd()*0.1,x,y+(rnd()-.5)*0.25,z+(rnd()-.5)*0.2,i%3?0x3d8c3a:0x2c7632);
+  ball(0.14,x+(rnd()-.5)*0.2,y-0.3-rnd()*0.3,z+(rnd()-.5)*0.2,0x3a8636);
+  if(i%2)ball(0.06,x,y-0.1-rnd()*0.4,z+0.1,0xc2569f);
+ }
+}
+
 function buildRoof(){
  while(roofG.children.length)roofG.remove(roofG.children[0]);
+ seed=7;
  roofG.position.set(0,h,0);
- const wood=L(0x9a6030),woodD=L(0x7a4a22),grey=L(0x4a4a50),cream=L(0xf0ece2),stone=L(0xb3ab9e);
- // slab + floor
+ stoneTex.repeat.set((w-0.2)/2.5,(d-0.2)/2.5);
+ const wood=new THREE.MeshLambertMaterial({map:woodTex}),woodD=L(0x6f4220),grey=L(0x4a4a50),cream=L(0xf0ece2);
+ const stone=new THREE.MeshLambertMaterial({map:stoneTex});
+ const glass=new THREE.MeshBasicMaterial({color:0xbfe3ee,transparent:true,opacity:0.3,depthWrite:false});
+ const glow=B(0xffcf7a),conc=L(0xa9a49a),sage=0x7fa6a0,sage2=0x5f9488,green=0x3a8a3a;
+ const F=0.25,t=0.2;
+
+ // slab + stone floor
  box(w+0.3,0.2,d+0.3,0,0.1,0,grey);
- box(w-0.2,0.05,d-0.2,0,0.22,0,stone);
- // parapet
- const t=0.2,ph=0.6,y=ph/2+0.2;
- box(w,ph,t,0,y,d/2-t/2,cream);box(w,ph,t,0,y,-d/2+t/2,cream);
- box(t,ph,d,w/2-t/2,y,0,cream);box(t,ph,d,-w/2+t/2,y,0,cream);
- box(w+0.1,0.07,t+0.1,0,ph+0.23,d/2-t/2,grey);box(w+0.1,0.07,t+0.1,0,ph+0.23,-d/2+t/2,grey);
- box(t+0.1,0.07,d,w/2-t/2,ph+0.23,0,grey);box(t+0.1,0.07,d,-w/2+t/2,ph+0.23,0,grey);
+ box(w-0.2,0.05,d-0.2,0,0.225,0,stone);
+
+ // back wall (left low, right high for inverters) + left wall
+ const bwL=w*0.55,bwR=w-bwL;
+ box(bwL,1.0,t,-w/2+bwL/2,F+0.5,-d/2+t/2,cream);
+ box(bwR,1.7,t,w/2-bwR/2,F+0.85,-d/2+t/2,cream);
+ box(bwL+0.1,0.07,t+0.1,-w/2+bwL/2,F+1.03,-d/2+t/2,grey);
+ box(bwR+0.1,0.07,t+0.1,w/2-bwR/2,F+1.73,-d/2+t/2,grey);
+ box(t,1.0,d,-w/2+t/2,F+0.5,0,cream);
+ box(t+0.1,0.07,d,-w/2+t/2,F+1.03,0,grey);
+ // right + front glass railing
+ box(0.05,0.95,d-0.2,w/2-0.1,F+0.5,0,glass);
+ box(0.09,0.07,d,w/2-0.1,F+0.98,0,grey);box(0.09,0.06,d,w/2-0.1,F+0.03,0,grey);
+ box(w-0.2,0.95,0.05,0,F+0.5,d/2-0.1,glass);
+ box(w,0.07,0.09,0,F+0.98,d/2-0.1,grey);box(w,0.06,0.09,0,F+0.03,d/2-0.1,grey);
+ // wall lights + inverters on back wall
+ [0.22,0.4].forEach(k=>box(0.14,0.14,0.08,w*k,F+1.2,-d/2+t+0.04,glow));
+ for(let i=0;i<3;i++)box(0.5,0.7,0.1,w*0.17+i*0.65,F+0.95,-d/2+t+0.05,L(0xe8e8ea));
+
+ // wooden deck + fascia (front-left)
+ const dw=w*0.6,dx=-w/2+0.2+dw/2;
+ box(dw,0.08,1.5,dx,F+0.04,d/2-0.2-0.75,wood);
+ box(dw,0.5,0.14,dx,0.12,d/2+0.17,wood);
+
  // pergola (back-left)
- const pw=w*0.5,pd=d*0.42,px=-w*0.2,pz=-d*0.22,ph2=2.7;
- [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>box(0.16,ph2,0.16,px+a*pw/2,ph2/2+0.22,pz+b*pd/2,wood));
- box(pw+0.3,0.14,0.16,px,ph2+0.25,pz-pd/2,woodD);box(pw+0.3,0.14,0.16,px,ph2+0.25,pz+pd/2,woodD);
- for(let i=0;i<=8;i++){box(0.1,0.1,pd+0.3,px-pw/2+i*pw/8,ph2+0.34,pz,wood)}
- // wooden back wall
- box(pw,2.2,0.12,px,1.3,pz-pd/2-0.05,woodD);
- // solar panels
- for(let i=0;i<3;i++){const s=box(pw*0.28,0.05,pd*0.42,px-pw*0.3+i*pw*0.3,ph2+0.62,pz-pd*0.12,B(0x1f3f99));s.rotation.x=-0.28}
- // sofa + chairs + fire pit
- box(pw*0.55,0.4,0.8,px,0.45,pz-pd*0.28,L(0xa89a85));
- box(pw*0.55,0.5,0.18,px,0.8,pz-pd*0.28-0.35,L(0x978a76));
- box(0.8,0.4,0.8,px-pw*0.38,0.45,pz+pd*0.05,L(0x8f8472));
- box(0.8,0.4,0.8,px+pw*0.38,0.45,pz+pd*0.05,L(0x8f8472));
- box(0.9,0.4,0.9,px,0.42,pz+pd*0.05,L(0x6b625a));
- box(0.3,0.25,0.3,px,0.75,pz+pd*0.05,B(0xff8a1f));
- // green beds (right-back) + inverter boxes
- for(let i=0;i<3;i++){box(w*0.26,0.3,d*0.12,w*0.27,0.37,-d*0.12+i*d*0.17,grey);box(w*0.24,0.34,d*0.1,w*0.27,0.4,-d*0.12+i*d*0.17,L(0x4f8a3a))}
- box(0.5,0.7,0.12,w*0.3,1,-d/2+0.3,L(0xe8e8ea));box(0.5,0.7,0.12,w*0.42-0.2,1,-d/2+0.3,L(0xe8e8ea));
- // planters at front edge
- for(let i=0;i<4;i++){box(0.6,0.5,0.6,-w*0.38+i*w*0.25,0.5,d/2-0.55,L(0x6f6f73));plant(-w*0.38+i*w*0.25,0.75,d/2-0.55,1.5,0x2f7d3a)}
- plant(px-pw/2-0.5,0.25,pz+pd/2,2,0x3a8a3a);plant(w/2-0.7,0.25,d/2-0.7,2,0x3a8a3a);
+ const pw=w*0.52,pd=d*0.4,px=-w/2+0.45+pw/2,pz=-d/2+0.45+pd/2,ph2=2.8;
+ [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>box(0.18,ph2,0.18,px+a*pw/2,F+ph2/2,pz+b*pd/2,wood));
+ box(pw+0.4,0.16,0.18,px,F+ph2+0.08,pz-pd/2,woodD);
+ box(pw+0.4,0.16,0.18,px,F+ph2+0.08,pz+pd/2,woodD);
+ for(let i=0;i<=11;i++)box(0.1,0.1,pd+0.4,px-pw/2-0.1+i*(pw+0.2)/11,F+ph2+0.21,pz,wood);
+ // wooden wall behind pergola
+ box(pw,2.4,0.12,px,F+1.2,pz-pd/2-0.1,wood);
+ // solar panels on top
+ const sp=B(0x24479c);
+ for(let i=0;i<4;i++){const s=box(pw*0.21,0.05,pd*0.34,px-pw*0.38+i*pw*0.255,F+ph2+0.5,pz-pd*0.2,sp);s.rotation.x=-0.3}
+ for(let i=0;i<2;i++){const s=box(pw*0.21,0.05,pd*0.34,px-pw*0.13+i*pw*0.255,F+ph2+0.5,pz+pd*0.2,sp);s.rotation.x=-0.3}
+ // vines on pergola
+ vine(px-pw/2,pz+pd/2,F+0.4,F+ph2);
+ vine(px+pw/2,pz+pd/2,F+0.4,F+ph2);
+ vine(px-pw/2,pz-pd/2,F+0.4,F+ph2);
+ vineH(px-pw/2,px+pw/2,pz+pd/2,F+ph2-0.2);
+
+ // seating under pergola
+ const C={x:px+pw*0.02,z:pz+pd*0.05};
+ box(pw*0.55,0.38,0.85,C.x,F+0.19,pz-pd/2+0.75,L(0xb09f87));
+ box(pw*0.55,0.55,0.16,C.x,F+0.5,pz-pd/2+0.38,L(0xa8977f));
+ for(let i=-1;i<=1;i++)box(0.42,0.3,0.4,C.x+i*pw*0.16,F+0.5,pz-pd/2+0.8,L(0xc9b9a0));
+ box(0.8,0.38,0.8,C.x+pw*0.33,F+0.19,C.z-0.45,L(0x9a8c78));box(0.14,0.5,0.8,C.x+pw*0.33+0.36,F+0.5,C.z-0.45,L(0x8a7d6a));
+ box(0.8,0.38,0.8,C.x+pw*0.33,F+0.19,C.z+0.7,L(0x9a8c78));box(0.14,0.5,0.8,C.x+pw*0.33+0.36,F+0.5,C.z+0.7,L(0x8a7d6a));
+ box(pw*0.5,0.38,0.8,C.x,F+0.19,C.z+pd*0.3,L(0x9a8c78));box(pw*0.5,0.5,0.14,C.x,F+0.5,C.z+pd*0.3+0.36,L(0x8a7d6a));
+ // fire pit
+ box(0.95,0.4,0.95,C.x,F+0.2,C.z,L(0x6b625a));
+ box(0.6,0.05,0.6,C.x,F+0.42,C.z,B(0x2a2a2a));
+ const fl=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.5,6),B(0xff8a1f));fl.position.set(C.x,F+0.7,C.z);roofG.add(fl);
+
+ // raised planter in front of pergola (agave)
+ const lx=px-pw*0.1,lz=pz+pd/2+0.95;
+ box(pw*0.62,0.5,1.0,lx,F+0.25,lz,conc);
+ box(pw*0.62,0.05,0.04,lx,F+0.05,lz+0.52,glow);
+ for(let i=0;i<5;i++)succ(lx-pw*0.25+i*pw*0.125,F+0.5,lz+(i%2?0.15:-0.15),1.25+rnd()*0.4,i%2?sage:0x6aa59a);
+ grass(lx-pw*0.3,F+0.5,lz-0.2,1.3,0xb8b072);
+
+ // long planter on right edge (succulents + palms)
+ const rx=w/2-1.05,rz=d*0.15,rl=d*0.42;
+ box(1.0,0.5,rl,rx,F+0.25,rz,conc);
+ box(0.04,0.05,rl,rx-0.52,F+0.05,rz,glow);
+ palm(rx+0.05,F+0.5,rz-rl/2+0.3,2.3);
+ for(let i=0;i<5;i++)succ(rx+(i%2?0.12:-0.12),F+0.5,rz-rl/2+1.0+i*(rl-1.6)/4,1.2+rnd()*0.4,i%2?sage:0x6aa59a);
+ for(let i=0;i<3;i++)grass(rx+(i%2?0.2:-0.2),F+0.5,rz-rl/2+1.4+i*1.1,1.4,0xc9b977);
+ palm(rx,F+0.5,rz+rl/2-0.25,1.6);
+
+ // lawn beds (back-right)
+ for(let i=0;i<3;i++){
+  const bz=-d/2+1.35+i*d*0.13,bx=w*0.22;
+  box(w*0.27,0.28,d*0.085,bx,F+0.14,bz,grey);
+  box(w*0.25,0.3,d*0.07,bx,F+0.16,bz,L(0x5a9a3c));
+ }
+
+ // pots near deck
+ [[-w/2+0.9,d/2-1.2],[-w/2+dw-0.5,d/2-1.2]].forEach(([x,z])=>{
+  box(0.5,0.5,0.5,x,F+0.33,z,L(0x6f6f73));palm(x,F+0.58,z,1.1);
+ });
+ box(0.5,0.5,0.5,w/2-0.7,F+0.33,d/2-0.7,L(0x6f6f73));palm(w/2-0.7,F+0.58,d/2-0.7,1.2);
 }
 
 // ---- state ----
@@ -143,7 +254,8 @@ function place(){
  if(!drag)el+=(elT-el)*0.08;
  const r=dist;
  camera.position.set(Math.sin(az)*r*Math.cos(el),r*Math.sin(el)+1.4,Math.cos(az)*r*Math.cos(el));
- camera.lookAt(0,h*0.55,0);
+ const k=Math.min(1,Math.max(0,(el-0.22)/0.9));
+ camera.lookAt(0,h*(0.55+0.5*k),0);
  const idx=((Math.round(az/(Math.PI/2))%4)+4)%4;
  $('label').textContent=['Saamne (Front)',swapped?'Left Side':'Right Side','Peeche (Rear)',swapped?'Right Side':'Left Side'][idx];
 }
@@ -180,7 +292,7 @@ function showPic(){
  $('ovinfo').textContent=single?'':('Photo '+(pi+1)+' / '+pics.length+' (agli ke liye photo par tap karo)');
 }
 $('corner').onclick=()=>{if(!pics.length)return;single=false;pi=0;showPic();$('ov').classList.add('show')};
-$('roofp').onclick=()=>{pics=pics.slice();single=true;$('ovimg').src='roof.jpg';$('ovinfo').textContent='';$('ov').classList.add('show')};
+$('roofp').onclick=()=>{single=true;$('ovimg').src='roof.jpg';$('ovinfo').textContent='';$('ov').classList.add('show')};
 $('ovimg').onclick=e=>{e.stopPropagation();if(single||pics.length<2)return;pi=(pi+1)%pics.length;showPic()};
 $('ovx').onclick=()=>$('ov').classList.remove('show');
 $('ov').onclick=e=>{if(e.target===$('ov'))$('ov').classList.remove('show')};
@@ -190,6 +302,4 @@ addEventListener('resize',resize);
 build();setMats();resize();loop();
 </script>
 </body>
- 
 </html>
-
