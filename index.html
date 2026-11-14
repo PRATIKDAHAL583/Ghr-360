@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ghar 3D · 360° View</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#14130f;color:#f1eee6;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;padding:10px;gap:8px}
+h1{font-size:20px;margin:2px 0 0}
+.sub{margin:0;color:#a9a597;font-size:13px;text-align:center}
+#stage{width:100%;max-width:900px;height:min(62vh,500px);border:1px solid #38362f;border-radius:16px;overflow:hidden;position:relative;touch-action:none;cursor:grab}
+#stage canvas{width:100%!important;height:100%!important;display:block}
+#label{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:5px 12px;border-radius:20px;font-size:13px;pointer-events:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;max-width:900px}
+button{flex:1;min-width:90px;padding:11px 10px;border-radius:10px;border:1px solid #444238;background:#24231e;color:#f1eee6;font-size:14px}
+button.on{background:#fb923c;color:#1a1208;border-color:#fb923c;font-weight:600}
+.sl{width:100%;max-width:900px;display:grid;grid-template-columns:70px 1fr 40px;gap:6px;align-items:center;font-size:13px}
+.sl input{width:100%}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.94);display:none;flex-direction:column;align-items:center;justify-content:center;padding:12px;z-index:9;gap:10px}
+#ov.show{display:flex}
+#ov img{max-width:100%;max-height:78%;border-radius:8px}
+#ovinfo{font-size:14px;color:#ddd}
+#ovx{position:absolute;top:14px;right:14px;flex:none;min-width:0;padding:8px 14px}
+</style>
+</head>
+<body>
+<h1>🏠 Ghar 3D · 360° View</h1>
+<p class="sub">Left-right drag = ghumao, upar-neeche drag = upar/neeche se dekho. Chhat 3D me bani hai.</p>
+<div id="stage"><div id="label"></div></div>
+<div class="row">
+ <button id="bl">⟵ Left</button>
+ <button id="auto" class="on">Auto ghumao</button>
+ <button id="br">Right ⟶</button>
+</div>
+<div class="row">
+ <button id="zo">− Door</button><button id="zi">+ Paas</button>
+ <button id="top">⬆ Chhat dekho</button>
+ <button id="swap">Left ⇄ Right badlo</button>
+</div>
+<div class="row">
+ <button id="corner">Corner / Side photos</button>
+ <button id="roofp">Chhat photo</button>
+</div>
+<div class="sl"><span>Chaudai</span><input id="sw" type="range" min="6" max="14" step="0.1" value="8.8"><span id="vw">8.8</span></div>
+<div class="sl"><span>Gehrai</span><input id="sd" type="range" min="6" max="14" step="0.1" value="10.2"><span id="vd">10.2</span></div>
+<div class="sl"><span>Unchai</span><input id="sh" type="range" min="3" max="9" step="0.1" value="5.6"><span id="vh">5.6</span></div>
+<div id="ov"><button id="ovx">✕ Band</button><img id="ovimg" alt=""><div id="ovinfo"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const st=$('stage');
+let renderer;
+try{renderer=new THREE.WebGLRenderer({antialias:true})}catch(e){st.innerHTML='<p style="padding:20px">Is browser me 3D support nahi hai</p>';throw e}
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputEncoding=THREE.sRGBEncoding;
+st.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+const SKY=0xa9c8ea;
+scene.background=new THREE.Color(SKY);
+scene.fog=new THREE.Fog(SKY,45,120);
+const camera=new THREE.PerspectiveCamera(40,1,0.1,300);
+scene.add(new THREE.AmbientLight(0xffffff,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.6);sun.position.set(10,20,12);scene.add(sun);
+
+// ---- deewar (photos) ----
+const loader=new THREE.TextureLoader();
+const tex=n=>{const t=loader.load('tex_'+n+'.jpg');t.anisotropy=8;t.encoding=THREE.sRGBEncoding;return new THREE.MeshBasicMaterial({map:t})};
+const M={front:tex('front'),rear:tex('rear'),left:tex('left'),right:tex('right')};
+const plain=c=>new THREE.MeshBasicMaterial({color:c});
+let swapped=false;
+// BoxGeometry face order: +x, -x, +y, -y, +z, -z
+const house=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),[M.right,M.left,plain(0xdcd7cb),plain(0x333333),M.front,M.rear]);
+scene.add(house);
+
+const ground=new THREE.Mesh(new THREE.CircleGeometry(150,48),new THREE.MeshBasicMaterial({color:0x4f7d3b}));
+ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
+const pad=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0xb4b0a6}));
+pad.rotation.x=-Math.PI/2;pad.position.y=0;scene.add(pad);
+
+// ---- chhat (roof terrace) ----
+const roofG=new THREE.Group();scene.add(roofG);
+const L=c=>new THREE.MeshLambertMaterial({color:c});
+const B=c=>new THREE.MeshBasicMaterial({color:c});
+function box(sx,sy,sz,x,y,z,m){const b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);b.position.set(x,y,z);roofG.add(b);return b}
+function plant(x,y,z,s,c){
+ const g=new THREE.Mesh(new THREE.ConeGeometry(0.22*s,0.7*s,8),L(c));g.position.set(x,y+0.35*s,z);roofG.add(g);
+}
+function buildRoof(){
+ while(roofG.children.length)roofG.remove(roofG.children[0]);
+ roofG.position.set(0,h,0);
+ const wood=L(0x9a6030),woodD=L(0x7a4a22),grey=L(0x4a4a50),cream=L(0xf0ece2),stone=L(0xb3ab9e);
+ // slab + floor
+ box(w+0.3,0.2,d+0.3,0,0.1,0,grey);
+ box(w-0.2,0.05,d-0.2,0,0.22,0,stone);
+ // parapet
+ const t=0.2,ph=0.6,y=ph/2+0.2;
+ box(w,ph,t,0,y,d/2-t/2,cream);box(w,ph,t,0,y,-d/2+t/2,cream);
+ box(t,ph,d,w/2-t/2,y,0,cream);box(t,ph,d,-w/2+t/2,y,0,cream);
+ box(w+0.1,0.07,t+0.1,0,ph+0.23,d/2-t/2,grey);box(w+0.1,0.07,t+0.1,0,ph+0.23,-d/2+t/2,grey);
+ box(t+0.1,0.07,d,w/2-t/2,ph+0.23,0,grey);box(t+0.1,0.07,d,-w/2+t/2,ph+0.23,0,grey);
+ // pergola (back-left)
+ const pw=w*0.5,pd=d*0.42,px=-w*0.2,pz=-d*0.22,ph2=2.7;
+ [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>box(0.16,ph2,0.16,px+a*pw/2,ph2/2+0.22,pz+b*pd/2,wood));
+ box(pw+0.3,0.14,0.16,px,ph2+0.25,pz-pd/2,woodD);box(pw+0.3,0.14,0.16,px,ph2+0.25,pz+pd/2,woodD);
+ for(let i=0;i<=8;i++){box(0.1,0.1,pd+0.3,px-pw/2+i*pw/8,ph2+0.34,pz,wood)}
+ // wooden back wall
+ box(pw,2.2,0.12,px,1.3,pz-pd/2-0.05,woodD);
+ // solar panels
+ for(let i=0;i<3;i++){const s=box(pw*0.28,0.05,pd*0.42,px-pw*0.3+i*pw*0.3,ph2+0.62,pz-pd*0.12,B(0x1f3f99));s.rotation.x=-0.28}
+ // sofa + chairs + fire pit
+ box(pw*0.55,0.4,0.8,px,0.45,pz-pd*0.28,L(0xa89a85));
+ box(pw*0.55,0.5,0.18,px,0.8,pz-pd*0.28-0.35,L(0x978a76));
+ box(0.8,0.4,0.8,px-pw*0.38,0.45,pz+pd*0.05,L(0x8f8472));
+ box(0.8,0.4,0.8,px+pw*0.38,0.45,pz+pd*0.05,L(0x8f8472));
+ box(0.9,0.4,0.9,px,0.42,pz+pd*0.05,L(0x6b625a));
+ box(0.3,0.25,0.3,px,0.75,pz+pd*0.05,B(0xff8a1f));
+ // green beds (right-back) + inverter boxes
+ for(let i=0;i<3;i++){box(w*0.26,0.3,d*0.12,w*0.27,0.37,-d*0.12+i*d*0.17,grey);box(w*0.24,0.34,d*0.1,w*0.27,0.4,-d*0.12+i*d*0.17,L(0x4f8a3a))}
+ box(0.5,0.7,0.12,w*0.3,1,-d/2+0.3,L(0xe8e8ea));box(0.5,0.7,0.12,w*0.42-0.2,1,-d/2+0.3,L(0xe8e8ea));
+ // planters at front edge
+ for(let i=0;i<4;i++){box(0.6,0.5,0.6,-w*0.38+i*w*0.25,0.5,d/2-0.55,L(0x6f6f73));plant(-w*0.38+i*w*0.25,0.75,d/2-0.55,1.5,0x2f7d3a)}
+ plant(px-pw/2-0.5,0.25,pz+pd/2,2,0x3a8a3a);plant(w/2-0.7,0.25,d/2-0.7,2,0x3a8a3a);
+}
+
+// ---- state ----
+let w=8.8,d=10.2,h=5.6,az=0,el=0.22,elT=0.22,vel=0,auto=true,drag=false,lastX=0,lastY=0,dist=26;
+const EL_MIN=0.03,EL_MAX=1.45;
+function build(){
+ house.scale.set(w,h,d);house.position.y=h/2;
+ pad.scale.set(w+6,d+6,1);
+ buildRoof();
+}
+function setMats(){
+ house.material[0]=swapped?M.left:M.right;
+ house.material[1]=swapped?M.right:M.left;
+}
+function resize(){const W=st.clientWidth,H=st.clientHeight;renderer.setSize(W,H,false);camera.aspect=W/H;camera.updateProjectionMatrix()}
+function place(){
+ if(!drag)el+=(elT-el)*0.08;
+ const r=dist;
+ camera.position.set(Math.sin(az)*r*Math.cos(el),r*Math.sin(el)+1.4,Math.cos(az)*r*Math.cos(el));
+ camera.lookAt(0,h*0.55,0);
+ const idx=((Math.round(az/(Math.PI/2))%4)+4)%4;
+ $('label').textContent=['Saamne (Front)',swapped?'Left Side':'Right Side','Peeche (Rear)',swapped?'Right Side':'Left Side'][idx];
+}
+function loop(){
+ if(!drag){if(auto)az+=0.004;else{az+=vel;vel*=0.94;if(Math.abs(vel)<0.0001)vel=0}}
+ place();renderer.render(scene,camera);requestAnimationFrame(loop);
+}
+st.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;vel=0;st.setPointerCapture(e.pointerId);st.style.cursor='grabbing'});
+st.addEventListener('pointermove',e=>{
+ if(!drag)return;
+ const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;
+ az-=dx*0.008;vel=-dx*0.008;
+ el=Math.min(EL_MAX,Math.max(EL_MIN,el+dy*0.006));elT=el;
+ $('top').classList.toggle('on',el>0.7);
+});
+const end=()=>{drag=false;st.style.cursor='grab'};
+st.addEventListener('pointerup',end);st.addEventListener('pointercancel',end);
+st.addEventListener('wheel',e=>{e.preventDefault();dist=Math.min(60,Math.max(12,dist+e.deltaY*0.02))},{passive:false});
+function stop(){auto=false;$('auto').classList.remove('on')}
+function snap(k){stop();az=Math.round(az/(Math.PI/2))*(Math.PI/2)+k*Math.PI/2}
+$('bl').onclick=()=>snap(1);$('br').onclick=()=>snap(-1);
+$('auto').onclick=()=>{auto=!auto;$('auto').classList.toggle('on',auto)};
+$('zi').onclick=()=>dist=Math.max(12,dist-4);$('zo').onclick=()=>dist=Math.min(60,dist+4);
+$('swap').onclick=()=>{swapped=!swapped;setMats()};
+$('top').onclick=()=>{const up=elT<0.7;elT=up?1.1:0.22;$('top').classList.toggle('on',up);$('top').textContent=up?'⬇ Neeche aao':'⬆ Chhat dekho'};
+
+// ---- photo gallery (corner.jpg, corner2.jpg ... corner9.jpg) ----
+let pics=[],pi=0,single=false;
+['corner.jpg','corner2.jpg','corner3.jpg','corner4.jpg','corner5.jpg','corner6.jpg','corner7.jpg','corner8.jpg','corner9.jpg'].forEach(n=>{
+ const im=new Image();im.onload=()=>{pics.push(n);pics.sort()};im.src=n;
+});
+function showPic(){
+ $('ovimg').src=pics[pi];
+ $('ovinfo').textContent=single?'':('Photo '+(pi+1)+' / '+pics.length+' (agli ke liye photo par tap karo)');
+}
+$('corner').onclick=()=>{if(!pics.length)return;single=false;pi=0;showPic();$('ov').classList.add('show')};
+$('roofp').onclick=()=>{pics=pics.slice();single=true;$('ovimg').src='roof.jpg';$('ovinfo').textContent='';$('ov').classList.add('show')};
+$('ovimg').onclick=e=>{e.stopPropagation();if(single||pics.length<2)return;pi=(pi+1)%pics.length;showPic()};
+$('ovx').onclick=()=>$('ov').classList.remove('show');
+$('ov').onclick=e=>{if(e.target===$('ov'))$('ov').classList.remove('show')};
+
+[['sw','vw',v=>w=v],['sd','vd',v=>d=v],['sh','vh',v=>h=v]].forEach(([s,l,f])=>{$(s).oninput=e=>{const v=+e.target.value;f(v);$(l).textContent=v.toFixed(1);build()}});
+addEventListener('resize',resize);
+build();setMats();resize();loop();
+</script>
+</body>
+</html>
