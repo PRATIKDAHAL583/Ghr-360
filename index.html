@@ -236,6 +236,78 @@ function buildRoof(){
  });
  box(0.5,0.5,0.5,w/2-0.7,F+0.33,d/2-0.7,L(0x6f6f73));palm(w/2-0.7,F+0.58,d/2-0.7,1.2);
 }
+// ---- FRONT 3D: side blocks, balcony slab + glass, canopy, steps, pots ----
+// index.html mein "// ---- state ----" se PEHLE paste karo.
+const frontG=new THREE.Group();scene.add(frontG);
+const fl=c=>new THREE.MeshLambertMaterial({color:new THREE.Color(c).convertSRGBToLinear()});
+
+// front photo ka ek hissa (u: 0=left..1=right, v: 0=upar..1=neeche)
+function fPhoto(u0,u1,v0,v1){
+  const t=loader.load('tex_front.jpg');
+  t.encoding=THREE.sRGBEncoding;t.anisotropy=8;
+  t.repeat.set(u1-u0,v1-v0);t.offset.set(u0,1-v1);
+  return new THREE.MeshBasicMaterial({map:t});
+}
+function fbox(sx,sy,sz,x,y,z,mats){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mats);
+  m.position.set(x,y,z);frontG.add(m);return m;
+}
+function fern(x,y,z,s){
+  for(let i=0;i<9;i++){
+    const a=i/9*6.283;
+    const c=new THREE.Mesh(new THREE.ConeGeometry(0.06*s,0.7*s,4),fl(i%2?0x2f7d3a:0x3f9445));
+    c.position.set(x+Math.cos(a)*0.18*s,y+0.3*s,z+Math.sin(a)*0.18*s);
+    c.rotation.set(Math.sin(a)*1.0,0,-Math.cos(a)*1.0);
+    frontG.add(c);
+  }
+}
+function pot(x,y,z,s){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(0.22*s,0.17*s,0.34*s,10),fl(0x5d6068));
+  m.position.set(x,y+0.17*s,z);frontG.add(m);
+  fern(x,y+0.3*s,z,s);
+}
+
+function buildFront(){
+  while(frontG.children.length)frontG.remove(frontG.children[0]);
+  const P=0.55;                       // side blocks kitne aage nikle hain
+  const white=fl(0xf3efe6),grey=fl(0x4a4a50),wood=fl(0xa0662f),
+        stepc=fl(0x9a9a9a),
+        glass=new THREE.MeshBasicMaterial({color:0xbfe3ee,transparent:true,opacity:0.3,depthWrite:false});
+  const zf=d/2;                       // ghar ka front face
+
+  // 1) left block (full height) - front photo ka left hissa
+  const lw=w*0.27;
+  fbox(lw,h,P,-w/2+lw/2,h/2,zf+P/2,[white,white,grey,white,fPhoto(0,0.27,0,1),white]);
+  // 2) right block (full height) - front photo ka right hissa
+  const rw=w*0.25;
+  fbox(rw,h,P,w/2-rw/2,h/2,zf+P/2,[white,white,grey,white,fPhoto(0.75,1,0,1),white]);
+
+  // 3) balcony slab (beech mein, aage nikla hua)
+  const bw=w*0.48,bx=w*0.01,slabY=h*0.455,slabT=h*0.07,bd=P+0.3;
+  fbox(bw,slabT,bd,bx,slabY,zf+bd/2,[white,white,white,wood,white,white]);
+  // glass railing + upar ki rail
+  const gy=slabY+slabT/2+h*0.06;
+  fbox(bw,h*0.12,0.04,bx,gy,zf+bd-0.04,glass);
+  fbox(bw,0.04,0.06,bx,gy+h*0.06,zf+bd-0.04,fl(0x222222));
+
+  // 4) upar ka canopy (lakdi ki chhat wala overhang)
+  const cd=P+0.3;
+  fbox(w*0.5,h*0.035,cd,bx,h*0.875,zf+cd/2,[grey,grey,grey,wood,grey,grey]);
+
+  // 5) entrance ki 3 seedhiyan
+  for(let k=0;k<3;k++)
+    fbox(w*0.38,0.07*(k+1),0.25,w*0.01,0.035*(k+1),zf+0.62-k*0.25,stepc);
+
+  // 6) gamle: darwaze ke paas + balcony par
+  [0.34,0.63,0.69].forEach(u=>pot((u-0.5)*w,0,zf+0.5,1.1));
+  [0.33,0.72].forEach(u=>pot((u-0.5)*w,slabY+slabT/2,zf+0.4,1.1));
+
+  // 7) neeche jhaadiyan (left aur right kone par)
+  [[-w/2-0.2,zf+0.5],[-w/2+0.3,zf+P+0.4],[w/2+0.2,zf+0.5],[w/2-0.3,zf+P+0.4]].forEach(([x,z])=>{
+    const b=new THREE.Mesh(new THREE.SphereGeometry(0.32,8,6),fl(0x2f7d3a));
+    b.position.set(x,0.25,z);frontG.add(b);
+  });
+}
 
 // ---- state ----
 let w=8.8,d=10.2,h=5.6,az=0,el=0.22,elT=0.22,vel=0,auto=true,drag=false,lastX=0,lastY=0,dist=26;
