@@ -177,11 +177,11 @@ function buildRoof(){
  // wooden deck + fascia (front-left)
  const dw=w*0.6,dx=-w/2+0.2+dw/2;
  box(dw,0.08,1.5,dx,F+0.04,d/2-0.2-0.75,wood);
- const pw=w*0.45,pd=d*0.4,px=-w/2+1.0+pw/2,pz=-d/2+1.0+pd/2,ph2=2.8;
  box(dw,0.5,0.14,dx,0.12,d/2+0.17,wood);
 
  // pergola (back-left)
  const pw=w*0.52,pd=d*0.4,px=-w/2+0.45+pw/2,pz=-d/2+0.45+pd/2,ph2=2.8;
+ const pw=w*0.45,pd=d*0.4,px=-w/2+1.0+pw/2,pz=-d/2+1.0+pd/2,ph2=2.8;
  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>box(0.18,ph2,0.18,px+a*pw/2,F+ph2/2,pz+b*pd/2,wood));
  box(pw+0.4,0.16,0.18,px,F+ph2+0.08,pz-pd/2,woodD);
  box(pw+0.4,0.16,0.18,px,F+ph2+0.08,pz+pd/2,woodD);
