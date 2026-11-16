@@ -1,4 +1,4 @@
-<!doctype html>
+<    <!doctype html>
 <html lang="hi">
 <head>
 <meta charset="utf-8">
@@ -7,38 +7,38 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:#14130f;color:#f1eee6;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;padding:10px;gap:8px}
+body{background:#14130f;color:#f1eee6;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;align-items:center;padding:12px}
 h1{font-size:20px;margin:2px 0 0}
 .sub{margin:0;color:#a9a597;font-size:13px;text-align:center}
-#stage{width:100%;max-width:900px;height:min(62vh,500px);border:1px solid #38362f;border-radius:16px;overflow:hidden;position:relative;touch-action:none;cursor:grab}
+#stage{width:100%;max-width:900px;height:min(62vh,500px);border:1px solid #38362f;border-radius:16px;overflow:hidden;position:relative;margin:10px 0;touch-action:none;cursor:grab}
 #stage canvas{width:100%!important;height:100%!important;display:block}
-#label{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:5px 12px;border-radius:20px;font-size:13px;pointer-events:none}
-.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;max-width:900px}
-button{flex:1;min-width:90px;padding:11px 10px;border-radius:10px;border:1px solid #444238;background:#24231e;color:#f1eee6;font-size:14px}
-button.on{background:#fb923c;color:#1a1208;border-color:#fb923c;font-weight:600}
+#label{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:5px 12px;border-radius:20px;font-size:14px;pointer-events:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;max-width:900px;margin-bottom:8px}
+button{flex:1;min-width:90px;padding:11px 10px;border-radius:10px;border:1px solid #444238;background:#24231e;color:#f1eee6;font-size:15px}
+button.on{background:#fb923c;border-color:#fb923c;color:#1a1208;font-weight:600}
 .sl{width:100%;max-width:900px;display:grid;grid-template-columns:70px 1fr 40px;gap:6px;align-items:center;font-size:13px}
 .sl input{width:100%}
-#ov{position:fixed;inset:0;background:rgba(0,0,0,.94);display:none;flex-direction:column;align-items:center;justify-content:center;padding:12px;z-index:9;gap:10px}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.94);display:none;flex-direction:column;align-items:center;justify-content:center}
 #ov.show{display:flex}
 #ov img{max-width:100%;max-height:78%;border-radius:8px}
-#ovinfo{font-size:14px;color:#ddd}
+#ovinfo{font-size:14px;color:#ddd;margin-top:8px}
 #ovx{position:absolute;top:14px;right:14px;flex:none;min-width:0;padding:8px 14px}
 </style>
 </head>
 <body>
 <h1>🏠 Ghar 3D · 360° View</h1>
-<p class="sub">Left-right drag = ghumao, upar-neeche drag = upar/neeche se dekho. Chhat 3D me bani hai.</p>
+<p class="sub">Drag karke ghar ke charo taraf ghumein. Photo ghar ki deewar par lagi hain, chhat 3D me bani hai.</p>
 <div id="stage"><div id="label"></div></div>
 <div class="row">
- <button id="bl">⟵ Left</button>
+ <button id="bl">← Left</button>
  <button id="auto" class="on">Auto ghumao</button>
- <button id="br">Right ⟶</button>
+ <button id="br">Right →</button>
 </div>
 <div class="row">
  <button id="zo">− Door</button><button id="zi">+ Paas</button>
- <button id="top">⬆ Chhat dekho</button>
- <button id="swap">Left ⇄ Right badlo</button>
+ <button id="top">↑ Chhat dekho</button>
 </div>
+<div class="row"><button id="swap">Left ⇄ Right badlo</button></div>
 <div class="row">
  <button id="corner">Corner / Side photos</button>
  <button id="roofp">Chhat photo</button>
@@ -53,7 +53,7 @@ button.on{background:#fb923c;color:#1a1208;border-color:#fb923c;font-weight:600}
 const $=id=>document.getElementById(id);
 const st=$('stage');
 let renderer;
-try{renderer=new THREE.WebGLRenderer({antialias:true})}catch(e){st.innerHTML='<p style="padding:20px">Is browser me 3D support nahi hai</p>';throw e}
+try{renderer=new THREE.WebGLRenderer({antialias:true})}catch(e){st.innerHTML='<p style="padding:20px">Is browser me 3D nahi chal raha.</p>';throw e}
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.outputEncoding=THREE.sRGBEncoding;
 st.appendChild(renderer.domElement);
@@ -72,245 +72,83 @@ const tex=n=>{const t=loader.load('tex_'+n+'.jpg');t.anisotropy=8;t.encoding=THR
 const M={front:tex('front'),rear:tex('rear'),left:tex('left'),right:tex('right')};
 const plain=c=>new THREE.MeshBasicMaterial({color:c});
 let swapped=false;
-// BoxGeometry face order: +x, -x, +y, -y, +z, -z
+// BoxGeometry face order: +x,-x,+y,-y,+z,-z
 const house=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),[M.right,M.left,plain(0xdcd7cb),plain(0x333333),M.front,M.rear]);
 scene.add(house);
-
 const ground=new THREE.Mesh(new THREE.CircleGeometry(150,48),new THREE.MeshBasicMaterial({color:0x4f7d3b}));
 ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
 const pad=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0xb4b0a6}));
 pad.rotation.x=-Math.PI/2;pad.position.y=0;scene.add(pad);
 
-// ---- chhat (roof terrace) : photo jaisi ----
-const roofG=new THREE.Group();scene.add(roofG);
- const L=c=>new THREE.MeshLambertMaterial({color:new THREE.Color(c).convertSRGBToLinear()});
-const B=c=>new THREE.MeshBasicMaterial({color:new THREE.Color(c).convertSRGBToLinear()});
- const L=c=>new THREE.MeshLambertMaterial({color:c});
- const B=c=>new THREE.MeshBasicMaterial({color:c});
-function ctex(draw,cw,ch){const c=document.createElement('canvas');c.width=cw;c.height=ch;draw(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t}
-const stoneTex=ctex(g=>{
- g.fillStyle='#7d776c';g.fillRect(0,0,256,256);
- for(let y=0;y<256;y+=32){let x=-((y/32)%2)*22;while(x<256){const ww=30+Math.random()*28;const v=(150+Math.random()*36)|0;g.fillStyle='rgb('+v+','+(v-6)+','+(v-16)+')';g.fillRect(x+1.5,y+1.5,ww-3,29);x+=ww}}
-},256,256);
-const woodTex=ctex(g=>{
- g.fillStyle='#9a6030';g.fillRect(0,0,128,128);
-stoneTex.encoding=woodTex.encoding=THREE.sRGBEncoding; 
- for(let y=0;y<128;y+=16){g.fillStyle='rgba(60,30,10,.55)';g.fillRect(0,y,128,2);for(let i=0;i<6;i++){g.fillStyle='rgba(255,200,140,.12)';g.fillRect(Math.random()*128,y+3+Math.random()*10,20+Math.random()*40,1)}}
-},128,128);
-woodTex.repeat.set(3,2);
+// ---- helpers ----
+const col=c=>new THREE.Color(c).convertSRGBToLinear();
+const L=c=>new THREE.MeshLambertMaterial({color:col(c)});
+const B=c=>new THREE.MeshBasicMaterial({color:col(c)});
 
-let seed=7;
-const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+// ---- chhat (roof terrace): photo se ----
+const roofG=new THREE.Group();scene.add(roofG);
 function box(sx,sy,sz,x,y,z,m){const b=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),m);b.position.set(x,y,z);roofG.add(b);return b}
-function ball(r,x,y,z,c,sy){const s=new THREE.Mesh(new THREE.SphereGeometry(r,7,5),L(c));s.position.set(x,y,z);if(sy)s.scale.y=sy;roofG.add(s);return s}
-// agave / succulent rosette
-function succ(x,y,z,s,c){
- const n=9;
- for(let i=0;i<n;i++){
-  const a=i/n*Math.PI*2,th=0.95;
-  const cn=new THREE.Mesh(new THREE.ConeGeometry(0.11*s,0.5*s,5),L(c));
-  cn.position.set(x+Math.cos(a)*0.17*s,y+0.2*s,z+Math.sin(a)*0.17*s);
-  cn.rotation.set(Math.sin(a)*th,0,-Math.cos(a)*th);roofG.add(cn);
- }
- const cn=new THREE.Mesh(new THREE.ConeGeometry(0.1*s,0.45*s,5),L(c));cn.position.set(x,y+0.24*s,z);roofG.add(cn);
-}
-// palm / cycad
-function palm(x,y,z,s){
- const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.07*s,0.1*s,0.55*s,6),L(0x6b4a2a));tr.position.set(x,y+0.27*s,z);roofG.add(tr);
- for(let i=0;i<10;i++){
-  const a=i/10*Math.PI*2,th=1.15;
-  const f=new THREE.Mesh(new THREE.ConeGeometry(0.09*s,1.0*s,4),L(i%2?0x2f7d3a:0x3f9445));
-  f.position.set(x+Math.cos(a)*0.34*s,y+0.62*s,z+Math.sin(a)*0.34*s);
-  f.rotation.set(Math.sin(a)*th,0,-Math.cos(a)*th);roofG.add(f);
- }
-}
-function grass(x,y,z,s,c){for(let i=0;i<6;i++){const a=i/6*6.28;const g=new THREE.Mesh(new THREE.ConeGeometry(0.04*s,0.55*s,3),L(c));g.position.set(x+Math.cos(a)*0.1*s,y+0.25*s,z+Math.sin(a)*0.1*s);g.rotation.set(Math.sin(a)*0.35,0,-Math.cos(a)*0.35);roofG.add(g)}}
-function vine(x,z,y0,y1){
- for(let i=0;i<10;i++){
-  const t=i/9;
-  ball(0.15+rnd()*0.14,x+(rnd()-.5)*0.35,y0+(y1-y0)*t,z+(rnd()-.5)*0.35,i%3?0x3d8c3a:0x2c7632);
-  if(i%2)ball(0.06,x+(rnd()-.5)*0.5,y0+(y1-y0)*t,z+(rnd()-.5)*0.5,0xc2569f);
- }
-}
-function vineH(x0,x1,z,y){
- const n=Math.max(6,Math.round((x1-x0)/0.35));
- for(let i=0;i<=n;i++){
-  const x=x0+(x1-x0)*i/n;
-  ball(0.17+rnd()*0.1,x,y+(rnd()-.5)*0.25,z+(rnd()-.5)*0.2,i%3?0x3d8c3a:0x2c7632);
-  ball(0.14,x+(rnd()-.5)*0.2,y-0.3-rnd()*0.3,z+(rnd()-.5)*0.2,0x3a8636);
-  if(i%2)ball(0.06,x,y-0.1-rnd()*0.4,z+0.1,0xc2569f);
- }
-}
 
 function buildRoof(){
  while(roofG.children.length)roofG.remove(roofG.children[0]);
- seed=7;
  roofG.position.set(0,h,0);
- stoneTex.repeat.set((w-0.2)/2.5,(d-0.2)/2.5);
- const wood=new THREE.MeshLambertMaterial({map:woodTex}),woodD=L(0x6f4220),grey=L(0x4a4a50),cream=L(0xf0ece2);
- const stone=new THREE.MeshLambertMaterial({map:stoneTex});
- const glass=new THREE.MeshBasicMaterial({color:0xbfe3ee,transparent:true,opacity:0.3,depthWrite:false});
- const glow=B(0xffcf7a),conc=L(0xa9a49a),sage=0x7fa6a0,sage2=0x5f9488,green=0x3a8a3a;
+ const grey=L(0x2a2a2e),cream=L(0xf0ece2),wood=L(0x8a5a2b);
  const F=0.25,t=0.2;
-
- // slab + stone floor
+ // slab
  box(w+0.3,0.2,d+0.3,0,0.1,0,grey);
- box(w-0.2,0.05,d-0.2,0,0.225,0,stone);
-
- // back wall (left low, right high for inverters) + left wall
- const bwL=w*0.55,bwR=w-bwL;
- box(bwL,1.0,t,-w/2+bwL/2,F+0.5,-d/2+t/2,cream);
- box(bwR,1.7,t,w/2-bwR/2,F+0.85,-d/2+t/2,cream);
- box(bwL+0.1,0.07,t+0.1,-w/2+bwL/2,F+1.03,-d/2+t/2,grey);
- box(bwR+0.1,0.07,t+0.1,w/2-bwR/2,F+1.73,-d/2+t/2,grey);
- box(t,1.0,d,-w/2+t/2,F+0.5,0,cream);
- box(t+0.1,0.07,d,-w/2+t/2,F+1.03,0,grey);
- // right + front glass railing
- box(0.05,0.95,d-0.2,w/2-0.1,F+0.5,0,glass);
- box(0.09,0.07,d,w/2-0.1,F+0.98,0,grey);box(0.09,0.06,d,w/2-0.1,F+0.03,0,grey);
- box(w-0.2,0.95,0.05,0,F+0.5,d/2-0.1,glass);
- box(w,0.07,0.09,0,F+0.98,d/2-0.1,grey);box(w,0.06,0.09,0,F+0.03,d/2-0.1,grey);
- // wall lights + inverters on back wall
- [0.22,0.4].forEach(k=>box(0.14,0.14,0.08,w*k,F+1.2,-d/2+t+0.04,glow));
- for(let i=0;i<3;i++)box(0.5,0.7,0.1,w*0.17+i*0.65,F+0.95,-d/2+t+0.05,L(0xe8e8ea));
-
- // wooden deck + fascia (front-left)
- const dw=w*0.6,dx=-w/2+0.2+dw/2;
- box(dw,0.08,1.5,dx,F+0.04,d/2-0.2-0.75,wood);
- box(dw,0.5,0.14,dx,0.12,d/2+0.17,wood);
-
- // pergola (back-left)
- const pw=w*0.52,pd=d*0.4,px=-w/2+0.45+pw/2,pz=-d/2+0.45+pd/2,ph2=2.8;
- const pw=w*0.45,pd=d*0.4,px=-w/2+1.0+pw/2,pz=-d/2+1.0+pd/2,ph2=2.8;
- [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>box(0.18,ph2,0.18,px+a*pw/2,F+ph2/2,pz+b*pd/2,wood));
- box(pw+0.4,0.16,0.18,px,F+ph2+0.08,pz-pd/2,woodD);
- box(pw+0.4,0.16,0.18,px,F+ph2+0.08,pz+pd/2,woodD);
- for(let i=0;i<=11;i++)box(0.1,0.1,pd+0.4,px-pw/2-0.1+i*(pw+0.2)/11,F+ph2+0.21,pz,wood);
- // wooden wall behind pergola
- box(pw,2.4,0.12,px,F+1.2,pz-pd/2-0.1,wood);
- // solar panels on top
- const sp=B(0x24479c);
- for(let i=0;i<4;i++){const s=box(pw*0.21,0.05,pd*0.34,px-pw*0.38+i*pw*0.255,F+ph2+0.5,pz-pd*0.2,sp);s.rotation.x=-0.3}
- for(let i=0;i<2;i++){const s=box(pw*0.21,0.05,pd*0.34,px-pw*0.13+i*pw*0.255,F+ph2+0.5,pz+pd*0.2,sp);s.rotation.x=-0.3}
- // vines on pergola
- vine(px-pw/2,pz+pd/2,F+0.4,F+ph2);
- vine(px+pw/2,pz+pd/2,F+0.4,F+ph2);
- vine(px-pw/2,pz-pd/2,F+0.4,F+ph2);
- vineH(px-pw/2,px+pw/2,pz+pd/2,F+ph2-0.2);
-
- // seating under pergola
- const C={x:px+pw*0.02,z:pz+pd*0.05};
- box(pw*0.55,0.38,0.85,C.x,F+0.19,pz-pd/2+0.75,L(0xb09f87));
- box(pw*0.55,0.55,0.16,C.x,F+0.5,pz-pd/2+0.38,L(0xa8977f));
- for(let i=-1;i<=1;i++)box(0.42,0.3,0.4,C.x+i*pw*0.16,F+0.5,pz-pd/2+0.8,L(0xc9b9a0));
- box(0.8,0.38,0.8,C.x+pw*0.33,F+0.19,C.z-0.45,L(0x9a8c78));box(0.14,0.5,0.8,C.x+pw*0.33+0.36,F+0.5,C.z-0.45,L(0x8a7d6a));
- box(0.8,0.38,0.8,C.x+pw*0.33,F+0.19,C.z+0.7,L(0x9a8c78));box(0.14,0.5,0.8,C.x+pw*0.33+0.36,F+0.5,C.z+0.7,L(0x8a7d6a));
- box(pw*0.5,0.38,0.8,C.x,F+0.19,C.z+pd*0.3,L(0x9a8c78));box(pw*0.5,0.5,0.14,C.x,F+0.5,C.z+pd*0.3+0.36,L(0x8a7d6a));
- // fire pit
- box(0.95,0.4,0.95,C.x,F+0.2,C.z,L(0x6b625a));
- box(0.6,0.05,0.6,C.x,F+0.42,C.z,B(0x2a2a2a));
- const fl=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.5,6),B(0xff8a1f));fl.position.set(C.x,F+0.7,C.z);roofG.add(fl);
-
- // raised planter in front of pergola (agave)
- const lx=px-pw*0.1,lz=pz+pd/2+0.95;
- box(pw*0.62,0.5,1.0,lx,F+0.25,lz,conc);
- box(pw*0.62,0.05,0.04,lx,F+0.05,lz+0.52,glow);
- for(let i=0;i<5;i++)succ(lx-pw*0.25+i*pw*0.125,F+0.5,lz+(i%2?0.15:-0.15),1.25+rnd()*0.4,i%2?sage:0x6aa59a);
- grass(lx-pw*0.3,F+0.5,lz-0.2,1.3,0xb8b072);
-
- // long planter on right edge (succulents + palms)
- const rx=w/2-1.05,rz=d*0.15,rl=d*0.42;
- box(1.0,0.5,rl,rx,F+0.25,rz,conc);
- box(0.04,0.05,rl,rx-0.52,F+0.05,rz,glow);
- palm(rx+0.05,F+0.5,rz-rl/2+0.3,2.3);
- for(let i=0;i<5;i++)succ(rx+(i%2?0.12:-0.12),F+0.5,rz-rl/2+1.0+i*(rl-1.6)/4,1.2+rnd()*0.4,i%2?sage:0x6aa59a);
- for(let i=0;i<3;i++)grass(rx+(i%2?0.2:-0.2),F+0.5,rz-rl/2+1.4+i*1.1,1.4,0xc9b977);
- palm(rx,F+0.5,rz+rl/2-0.25,1.6);
-
- // lawn beds (back-right)
- for(let i=0;i<3;i++){
-  const bz=-d/2+1.35+i*d*0.13,bx=w*0.22;
-  box(w*0.27,0.28,d*0.085,bx,F+0.14,bz,grey);
-  box(w*0.25,0.3,d*0.07,bx,F+0.16,bz,L(0x5a9a3c));
- }
-
- // pots near deck
- [[-w/2+0.9,d/2-1.2],[-w/2+dw-0.5,d/2-1.2]].forEach(([x,z])=>{
-  box(0.5,0.5,0.5,x,F+0.33,z,L(0x6f6f73));palm(x,F+0.58,z,1.1);
- });
- box(0.5,0.5,0.5,w/2-0.7,F+0.33,d/2-0.7,L(0x6f6f73));palm(w/2-0.7,F+0.58,d/2-0.7,1.2);
+ // photo wala floor (roof_top.jpg)
+ const rt=loader.load('roof_top.jpg');rt.encoding=THREE.sRGBEncoding;rt.anisotropy=8;
+ const rp=new THREE.Mesh(new THREE.PlaneGeometry(w-0.2,d-0.2),new THREE.MeshBasicMaterial({map:rt}));
+ rp.rotation.x=-Math.PI/2;rp.position.set(0,0.21,0);roofG.add(rp);
+ // parapet (peeche, left, right)
+ box(w,0.9,t,0,F+0.45,-d/2+t/2,cream);
+ box(w+0.1,0.07,t+0.1,0,F+0.93,-d/2+t/2,grey);
+ box(t,0.9,d,-w/2+t/2,F+0.45,0,cream);
+ box(t+0.1,0.07,d,-w/2+t/2,F+0.93,0,grey);
+ box(t,0.9,d,w/2-t/2,F+0.45,0,cream);
+ box(t+0.1,0.07,d,w/2-t/2,F+0.93,0,grey);
+ // saamne: left aur right par chhoti deewar, beech mein lakdi
+ box(w*0.33,0.5,t,-w/2+w*0.165,F+0.25,d/2-t/2,cream);
+ box(w*0.33,0.07,t+0.1,-w/2+w*0.165,F+0.53,d/2-t/2,grey);
+ box(w*0.33,0.5,t,w/2-w*0.165,F+0.25,d/2-t/2,cream);
+ box(w*0.33,0.07,t+0.1,w/2-w*0.165,F+0.53,d/2-t/2,grey);
+ box(w*0.34,0.3,0.4,0,0.05,d/2+0.1,wood);
 }
-// ---- FRONT 3D: side blocks, balcony slab + glass, canopy, steps, pots ----
-// index.html mein "// ---- state ----" se PEHLE paste karo.
+
+// ---- front 3D: side blocks, balcony, canopy, steps, pots ----
 const frontG=new THREE.Group();scene.add(frontG);
-const fl=c=>new THREE.MeshLambertMaterial({color:new THREE.Color(c).convertSRGBToLinear()});
-
-// front photo ka ek hissa (u: 0=left..1=right, v: 0=upar..1=neeche)
 function fPhoto(u0,u1,v0,v1){
-  const t=loader.load('tex_front.jpg');
-  t.encoding=THREE.sRGBEncoding;t.anisotropy=8;
-  t.repeat.set(u1-u0,v1-v0);t.offset.set(u0,1-v1);
-  return new THREE.MeshBasicMaterial({map:t});
+ const t=loader.load('tex_front.jpg');t.encoding=THREE.sRGBEncoding;t.anisotropy=8;
+ t.repeat.set(u1-u0,v1-v0);t.offset.set(u0,1-v1);
+ return new THREE.MeshBasicMaterial({map:t});
 }
-function fbox(sx,sy,sz,x,y,z,mats){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mats);
-  m.position.set(x,y,z);frontG.add(m);return m;
-}
-function fern(x,y,z,s){
-  for(let i=0;i<9;i++){
-    const a=i/9*6.283;
-    const c=new THREE.Mesh(new THREE.ConeGeometry(0.06*s,0.7*s,4),fl(i%2?0x2f7d3a:0x3f9445));
-    c.position.set(x+Math.cos(a)*0.18*s,y+0.3*s,z+Math.sin(a)*0.18*s);
-    c.rotation.set(Math.sin(a)*1.0,0,-Math.cos(a)*1.0);
-    frontG.add(c);
-  }
-}
+function fbox(sx,sy,sz,x,y,z,mats){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mats);m.position.set(x,y,z);frontG.add(m);return m}
 function pot(x,y,z,s){
-  const m=new THREE.Mesh(new THREE.CylinderGeometry(0.22*s,0.17*s,0.34*s,10),fl(0x5d6068));
-  m.position.set(x,y+0.17*s,z);frontG.add(m);
-  fern(x,y+0.3*s,z,s);
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(0.22*s,0.17*s,0.34*s,10),L(0x5d6068));m.position.set(x,y+0.17*s,z);frontG.add(m);
+ for(let i=0;i<9;i++){const a=i/9*6.283;
+  const c=new THREE.Mesh(new THREE.ConeGeometry(0.06*s,0.7*s,4),L(i%2?0x2f7d3a:0x3f9445));
+  c.position.set(x+Math.cos(a)*0.18*s,y+0.6*s,z+Math.sin(a)*0.18*s);
+  c.rotation.set(Math.sin(a),0,-Math.cos(a));frontG.add(c)}
 }
-
 function buildFront(){
-  while(frontG.children.length)frontG.remove(frontG.children[0]);
-  const P=0.55;                       // side blocks kitne aage nikle hain
-  const white=fl(0xf3efe6),grey=fl(0x4a4a50),wood=fl(0xa0662f),
-        stepc=fl(0x9a9a9a),
-        glass=new THREE.MeshBasicMaterial({color:0xbfe3ee,transparent:true,opacity:0.3,depthWrite:false});
-  const zf=d/2;                       // ghar ka front face
-
-  // 1) left block (full height) - front photo ka left hissa
-  const lw=w*0.27;
-  fbox(lw,h,P,-w/2+lw/2,h/2,zf+P/2,[white,white,grey,white,fPhoto(0,0.27,0,1),white]);
-  // 2) right block (full height) - front photo ka right hissa
-  const rw=w*0.25;
-  fbox(rw,h,P,w/2-rw/2,h/2,zf+P/2,[white,white,grey,white,fPhoto(0.75,1,0,1),white]);
-
-  // 3) balcony slab (beech mein, aage nikla hua)
-  const bw=w*0.48,bx=w*0.01,slabY=h*0.455,slabT=h*0.07,bd=P+0.3;
-  fbox(bw,slabT,bd,bx,slabY,zf+bd/2,[white,white,white,wood,white,white]);
-  // glass railing + upar ki rail
-  const gy=slabY+slabT/2+h*0.06;
-  fbox(bw,h*0.12,0.04,bx,gy,zf+bd-0.04,glass);
-  fbox(bw,0.04,0.06,bx,gy+h*0.06,zf+bd-0.04,fl(0x222222));
-
-  // 4) upar ka canopy (lakdi ki chhat wala overhang)
-  const cd=P+0.3;
-  fbox(w*0.5,h*0.035,cd,bx,h*0.875,zf+cd/2,[grey,grey,grey,wood,grey,grey]);
-
-  // 5) entrance ki 3 seedhiyan
-  for(let k=0;k<3;k++)
-    fbox(w*0.38,0.07*(k+1),0.25,w*0.01,0.035*(k+1),zf+0.62-k*0.25,stepc);
-
-  // 6) gamle: darwaze ke paas + balcony par
-  [0.34,0.63,0.69].forEach(u=>pot((u-0.5)*w,0,zf+0.5,1.1));
-  [0.33,0.72].forEach(u=>pot((u-0.5)*w,slabY+slabT/2,zf+0.4,1.1));
-
-  // 7) neeche jhaadiyan (left aur right kone par)
-  [[-w/2-0.2,zf+0.5],[-w/2+0.3,zf+P+0.4],[w/2+0.2,zf+0.5],[w/2-0.3,zf+P+0.4]].forEach(([x,z])=>{
-    const b=new THREE.Mesh(new THREE.SphereGeometry(0.32,8,6),fl(0x2f7d3a));
-    b.position.set(x,0.25,z);frontG.add(b);
-  });
+ while(frontG.children.length)frontG.remove(frontG.children[0]);
+ const P=0.55,zf=d/2;
+ const white=L(0xf3efe6),grey=L(0x4a4a50),wood=L(0xa0662f),stepc=L(0x9a9a9a);
+ const glass=new THREE.MeshBasicMaterial({color:col(0xbfe3ee),transparent:true,opacity:0.3,depthWrite:false});
+ const lw=w*0.27,rw=w*0.25;
+ fbox(lw,h,P,-w/2+lw/2,h/2,zf+P/2,[white,white,grey,white,fPhoto(0,0.27,0,1),white]);
+ fbox(rw,h,P,w/2-rw/2,h/2,zf+P/2,[white,white,grey,white,fPhoto(0.75,1,0,1),white]);
+ const bw=w*0.48,bx=w*0.01,slabY=h*0.455,slabT=h*0.07,bd=P+0.3;
+ fbox(bw,slabT,bd,bx,slabY,zf+bd/2,[white,white,white,wood,white,white]);
+ const gy=slabY+slabT/2+h*0.06;
+ fbox(bw,h*0.12,0.04,bx,gy,zf+bd-0.04,glass);
+ fbox(bw,0.04,0.06,bx,gy+h*0.06,zf+bd-0.04,L(0x222222));
+ fbox(w*0.5,h*0.035,bd,bx,h*0.875,zf+bd/2,[grey,grey,grey,wood,grey,grey]);
+ for(let k=0;k<3;k++)fbox(w*0.38,0.07*(k+1),0.25,w*0.01,0.035*(k+1),zf+0.62-k*0.25,stepc);
+ [0.34,0.63,0.69].forEach(u=>pot((u-0.5)*w,0,zf+0.5,1.1));
+ [0.33,0.72].forEach(u=>pot((u-0.5)*w,slabY+slabT/2,zf+0.4,1.1));
+ [[-w/2-0.2,zf+0.5],[-w/2+0.3,zf+P+0.4],[w/2+0.2,zf+0.5],[w/2-0.3,zf+P+0.4]].forEach(([x,z])=>{
+  const b=new THREE.Mesh(new THREE.SphereGeometry(0.32,8,6),L(0x2f7d3a));b.position.set(x,0.25,z);frontG.add(b)});
 }
 
 // ---- state ----
@@ -319,7 +157,7 @@ const EL_MIN=0.03,EL_MAX=1.45;
 function build(){
  house.scale.set(w,h,d);house.position.y=h/2;
  pad.scale.set(w+6,d+6,1);
- buildRoof();
+ buildRoof();buildFront();
 }
 function setMats(){
  house.material[0]=swapped?M.left:M.right;
@@ -339,7 +177,9 @@ function loop(){
  if(!drag){if(auto)az+=0.004;else{az+=vel;vel*=0.94;if(Math.abs(vel)<0.0001)vel=0}}
  place();renderer.render(scene,camera);requestAnimationFrame(loop);
 }
-st.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;vel=0;st.setPointerCapture(e.pointerId);st.style.cursor='grabbing'});
+function stop(){auto=false;$('auto').classList.remove('on')}
+function snap(k){stop();az=Math.round(az/(Math.PI/2))*(Math.PI/2)+k*Math.PI/2}
+st.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;vel=0;stop();st.setPointerCapture(e.pointerId);st.style.cursor='grabbing'});
 st.addEventListener('pointermove',e=>{
  if(!drag)return;
  const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;
@@ -350,13 +190,11 @@ st.addEventListener('pointermove',e=>{
 const end=()=>{drag=false;st.style.cursor='grab'};
 st.addEventListener('pointerup',end);st.addEventListener('pointercancel',end);
 st.addEventListener('wheel',e=>{e.preventDefault();dist=Math.min(60,Math.max(12,dist+e.deltaY*0.02))},{passive:false});
-function stop(){auto=false;$('auto').classList.remove('on')}
-function snap(k){stop();az=Math.round(az/(Math.PI/2))*(Math.PI/2)+k*Math.PI/2}
 $('bl').onclick=()=>snap(1);$('br').onclick=()=>snap(-1);
 $('auto').onclick=()=>{auto=!auto;$('auto').classList.toggle('on',auto)};
 $('zi').onclick=()=>dist=Math.max(12,dist-4);$('zo').onclick=()=>dist=Math.min(60,dist+4);
 $('swap').onclick=()=>{swapped=!swapped;setMats()};
-$('top').onclick=()=>{const up=elT<0.7;elT=up?1.1:0.22;$('top').classList.toggle('on',up);$('top').textContent=up?'⬇ Neeche aao':'⬆ Chhat dekho'};
+$('top').onclick=()=>{const up=elT<0.7;elT=up?1.1:0.22;$('top').classList.toggle('on',up);$('top').textContent=up?'↓ Neeche aao':'↑ Chhat dekho'};
 
 // ---- photo gallery (corner.jpg, corner2.jpg ... corner9.jpg) ----
 let pics=[],pi=0,single=false;
@@ -373,7 +211,9 @@ $('ovimg').onclick=e=>{e.stopPropagation();if(single||pics.length<2)return;pi=(p
 $('ovx').onclick=()=>$('ov').classList.remove('show');
 $('ov').onclick=e=>{if(e.target===$('ov'))$('ov').classList.remove('show')};
 
-[['sw','vw',v=>w=v],['sd','vd',v=>d=v],['sh','vh',v=>h=v]].forEach(([s,l,f])=>{$(s).oninput=e=>{const v=+e.target.value;f(v);$(l).textContent=v.toFixed(1);build()}});
+[['sw','vw',v=>w=v],['sd','vd',v=>d=v],['sh','vh',v=>h=v]].forEach(([s,l,f])=>{
+ $(s).oninput=e=>{const v=+e.target.value;f(v);$(l).textContent=v;build()};
+});
 addEventListener('resize',resize);
 build();setMats();resize();loop();
 </script>
